@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from typing import Set, Dict, List
+from typing import Set, Dict, List, Tuple
 
 
 class TokenType(Enum):
@@ -42,3 +42,11 @@ class MathGrammarSpec:
         if token == ")":
             return TokenType.CLOSE_PAREN
         return TokenType.SPECIAL
+
+
+def build_vocab_mappings(tokens: List[str] = MATH_TOKENS) -> Tuple[Dict[str, int], Dict[int, str]]:
+    """Builds bidirectional token_to_id and id_to_token mapping dictionaries."""
+    token_to_id = {token: idx for idx, token in enumerate(tokens)}
+    id_to_token = {idx: token for idx, token in enumerate(tokens)}
+    return token_to_id, id_to_token
+
