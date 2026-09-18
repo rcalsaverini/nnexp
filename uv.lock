@@ -1560,11 +1560,15 @@ name = "nnexp"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "numpy" },
+    { name = "pandas" },
     { name = "peft" },
+    { name = "pyarrow" },
     { name = "pytest" },
     { name = "skypilot", extra = ["runpod"] },
     { name = "sympy" },
     { name = "torch" },
+    { name = "tqdm" },
     { name = "transformers" },
     { name = "trl" },
     { name = "wandb" },
@@ -1572,11 +1576,15 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "numpy" },
+    { name = "pandas" },
     { name = "peft" },
+    { name = "pyarrow" },
     { name = "pytest" },
     { name = "skypilot", extras = ["runpod"] },
     { name = "sympy" },
     { name = "torch" },
+    { name = "tqdm" },
     { name = "transformers" },
     { name = "trl" },
     { name = "wandb" },

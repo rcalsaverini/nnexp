@@ -15,6 +15,10 @@ dependencies = [
     "trl",
     "wandb",
     "sympy",
+    "numpy",
+    "pandas",
+    "pyarrow",
+    "tqdm",
     "skypilot[runpod]",
     "pytest",
 ]

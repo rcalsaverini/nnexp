@@ -11,6 +11,9 @@ class TokenType(Enum):
     SPECIAL = auto()          # <EOS>, <PAD>
 
 
+EOS_TOKEN: str = "<EOS>"
+
+
 # Target mathematical vocabulary
 MATH_TOKENS: List[str] = [
     "x", "pi", "e",

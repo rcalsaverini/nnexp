@@ -29,7 +29,9 @@ env/
 .uv_python/
 
 # Datasets & Generated Artifacts
-data/
+# Anchored to the repo root: an unanchored `data/` also matches the
+# `src/nnexp/data/` package and silently excludes it from version control.
+/data/
 *.parquet
 *.h5
 *.csv
