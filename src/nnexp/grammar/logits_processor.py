@@ -20,6 +20,8 @@ class GrammarLogitsProcessor(LogitsProcessor):
         eos_token: str = "<EOS>",
         max_stack_depth: int = 3,
         max_length: Optional[int] = 30,
+        max_integer_digits: int = 4,
+        max_fraction_digits: int = 3,
     ):
         self.token_to_id = token_to_id
         self.id_to_token = id_to_token
@@ -27,6 +29,8 @@ class GrammarLogitsProcessor(LogitsProcessor):
         self.eos_token_id = token_to_id.get(eos_token, -1)
         self.max_stack_depth = max_stack_depth
         self.max_length = max_length
+        self.max_integer_digits = max_integer_digits
+        self.max_fraction_digits = max_fraction_digits
 
         self.digit_ids = {self.token_to_id[d] for d in DIGITS if d in self.token_to_id}
         self.dot_id = self.token_to_id.get(".", -1)
@@ -41,6 +45,7 @@ class GrammarLogitsProcessor(LogitsProcessor):
         last_str: str = ""
         tokens_seen: int = 0
         in_float: bool = False
+        current_number: str = ""
 
         # Process token history to reconstruct pushdown state & floating-point status
         for tid in token_ids:
@@ -61,10 +66,13 @@ class GrammarLogitsProcessor(LogitsProcessor):
 
             if t_str == ".":
                 in_float = True
+                current_number += "."
             elif t_str in DIGITS:
-                pass  # maintain float status for multi-digit floats
+                current_number += t_str  # extends the literal being written
             else:
-                in_float = False  # reset float status on any operator, paren, or non-digit
+                # Any operator, paren or function terminates the current literal.
+                in_float = False
+                current_number = ""
 
             last_type = t_type
             last_str = t_str
@@ -132,6 +140,12 @@ class GrammarLogitsProcessor(LogitsProcessor):
             valid_types = {TokenType.BINARY_OPERATOR}
             valid_token_ids.update(self._get_ids_by_types(valid_types))
 
+            # Continue a multi-digit literal. The grammar defines
+            # integer = digit, { digit } and float = digit, { digit }, ".", digit, { digit },
+            # so a number is not restricted to a single digit.
+            if last_str in DIGITS and self._can_extend_number(current_number, in_float):
+                valid_token_ids.update(self.digit_ids)
+
             # If last token was a digit and current number is not already a float, '.' is valid
             if last_str in DIGITS and not in_float and self.dot_id != -1:
                 valid_token_ids.add(self.dot_id)
@@ -145,6 +159,21 @@ class GrammarLogitsProcessor(LogitsProcessor):
                 valid_token_ids.add(self.eos_token_id)
 
         return valid_token_ids
+
+    def _can_extend_number(self, current_number: str, in_float: bool) -> bool:
+        """
+        Whether another digit may be appended to the literal being written.
+
+        Bounded so a rollout cannot spend its whole length budget inside one
+        number. A leading zero is never extended: '05' is not a valid literal
+        and would fail to parse downstream.
+        """
+        integer_part, _, fraction_part = current_number.partition(".")
+        if in_float:
+            return len(fraction_part) < self.max_fraction_digits
+        if integer_part == "0":
+            return False
+        return len(integer_part) < self.max_integer_digits
 
     def _get_ids_by_types(self, token_types: Set[TokenType]) -> Set[int]:
         res = set()
